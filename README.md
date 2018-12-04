@@ -18,6 +18,8 @@ add all OE jars to build path (easiest to go to Java build path > Add External J
 
 Change compiler level to 1.8
 
+right click project > Maven > update project
+
 Run > run configurations
 
 ensure Main class is codegenerator.main.App in Main tab
