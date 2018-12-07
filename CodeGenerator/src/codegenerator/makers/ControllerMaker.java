@@ -10,6 +10,7 @@ import javax.lang.model.element.Modifier;
 import javax.servlet.http.HttpServletRequest;
 
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.servlet.ModelAndView;
@@ -18,6 +19,7 @@ import com.squareup.javapoet.AnnotationSpec;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.MethodSpec;
+import com.squareup.javapoet.ParameterSpec;
 import com.squareup.javapoet.TypeSpec;
 import com.squareup.javapoet.TypeSpec.Builder;
 
@@ -58,7 +60,9 @@ public class ControllerMaker {
 				jClassBuilder.addMethod(mainMethod);
 			} else {
 				// make controller class
-				jClassBuilder = TypeSpec.classBuilder(ctrlClassName).addModifiers(Modifier.PUBLIC).addMethod(mainMethod)
+				jClassBuilder = TypeSpec.classBuilder(ctrlClassName)
+						.addJavadoc("Status: generated")
+						.addModifiers(Modifier.PUBLIC).addMethod(mainMethod)
 						.addMethod(findForward).addAnnotation(Controller.class).superclass(BaseController.class)
 						.addMethod(MethodSpec.methodBuilder("getPageTitleKey").addModifiers(Modifier.PROTECTED)
 								.returns(String.class).addStatement("return null").build())
@@ -73,18 +77,26 @@ public class ControllerMaker {
 	private MethodSpec createMainMethod(Action action) {
 		String methodName = "show" + action.getPath().replaceAll("^/+", "");
 		String newFormClassName = action.getName().substring(0, 1).toUpperCase() + action.getName().substring(1);
-
+		ParameterSpec formParameter = ParameterSpec.builder(ClassName.get("spring.generated.forms", newFormClassName), "form")
+				.addAnnotation(AnnotationSpec.builder(ModelAttribute.class).addMember("value", "\"form\"")
+						.build()).build();
+		
 		// make RequestMapping method
 		return MethodSpec.methodBuilder(methodName).addModifiers(Modifier.PUBLIC).returns(ModelAndView.class)
 				.addParameter(HttpServletRequest.class, "request")
+				.addParameter(formParameter)
 				.addAnnotation(
 						AnnotationSpec.builder(RequestMapping.class).addMember("value", "\"" + action.getPath() + "\"")
 								.addMember("method", "$T.GET", RequestMethod.class).build())
 				.addStatement("$T forward = FWD_SUCCESS", String.class)
-				.addStatement("$T form = new $T()", ClassName.get("spring.generated.forms", newFormClassName),
-						ClassName.get("spring.generated.forms", newFormClassName))
+				.addCode("if (form == null) {\n")
+				.addStatement("\tform = new $T()", ClassName.get("spring.generated.forms", newFormClassName))
+				.addCode("}\n")
 				.addStatement("form.setFormName($S)", action.getName()).addStatement("form.setFormAction(\"\")")
 				.addStatement("$T errors = new BaseErrors()", BaseErrors.class)
+				.addCode("if (form.getErrors() != null) {\n")
+				.addStatement("\terrors = (BaseErrors) form.getErrors()")
+				.addCode("}\n")
 				.addStatement("ModelAndView mv = checkUserAndSetup(form, errors, request)")
 				.addCode("\nif (errors.hasErrors()) {\n" + "\treturn mv;\n" + "}\n\n")
 				.addCode("return findForward(forward, form);").build();
