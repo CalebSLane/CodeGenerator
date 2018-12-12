@@ -92,7 +92,7 @@ public class ControllerMaker {
 				.addCode("if (form == null) {\n")
 				.addStatement("\tform = new $T()", ClassName.get("spring.generated.forms", newFormClassName))
 				.addCode("}\n")
-				.addStatement("form.setFormName($S)", action.getName()).addStatement("form.setFormAction(\"\")")
+				.addStatement("form.setFormAction(\"\")")
 				.addStatement("$T errors = new BaseErrors()", BaseErrors.class)
 				.addCode("if (form.getErrors() != null) {\n")
 				.addStatement("\terrors = (BaseErrors) form.getErrors()")

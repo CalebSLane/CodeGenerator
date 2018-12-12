@@ -35,6 +35,7 @@ public class BeanMaker {
 				jClassBuilder = classesList.get(formClassName);
 			} else {
 				jClassBuilder = TypeSpec.classBuilder(formClassName).addModifiers(Modifier.PUBLIC);
+				jClassBuilder.addMethod(createConstructor(name));
 			}
 			for (FormProperty property : formBean.getPropertyList()) {
 				try {
@@ -120,6 +121,15 @@ public class BeanMaker {
 					.addCode("this." + property.getName() + " = " + property.getName() + ";\n").build();
 		}
 		return jMethod;
+	}
+	
+	private MethodSpec createConstructor(String name) {
+		MethodSpec constructor = MethodSpec.constructorBuilder()
+				.addModifiers(Modifier.PUBLIC)
+				.addStatement("setFormName(\"" + name + "\")")
+				.build();
+		return constructor;
+		
 	}
 
 	private void writeClasses(Map<String, TypeSpec.Builder> classesList, String generatedPackagePrefix,
